@@ -14,15 +14,13 @@ def handler(event: nil, context: nil)
     vat.create_accounts_data
 
     results = vat.check_accounts
-
     confirmation_url = vat.store
 
     {
       statusCode: 200,
       body: JSON.generate({
         results: results[:accounts],
-        request_id: results[:request_id],
-        date_time: results[:date_time],
+        date: results[:date],
         confirmation_url: confirmation_url
       })
     }

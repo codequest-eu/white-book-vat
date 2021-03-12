@@ -1,8 +1,10 @@
 # White Book VAT
 
-🇵🇱Sprawdź konta bankowe na podstawie NIP w API [Biała Księga](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) Ministerstwa Finansów.
+🇵🇱 Sprawdź konta bankowe na podstawie NIP w API [Biała Księga](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) Ministerstwa Finansów.
 
 Check VAT bank accounts using [MF API](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) and Google Sheets.
+
+<img src="https://white-book-vat.s3-eu-west-1.amazonaws.com/wb_2.gif" height="250" alt="White Book preview" />
 
 ## Setup
 
@@ -19,7 +21,7 @@ Using Google Sheets as a data source:
 - Enable Google Drive and Sheets API for the project (Library > _Selected API_ > Enable)
 - Go to Credentials section:
   - Create Credentials > Service account > Create
-  - Role: "Borwser" > Continue
+  - Role: "Browser" > Continue
   - Create kye > Key type: JSON > Create
   - Save file in project's root.
 - In Google Sheets App: share selected sheet with user from `client_email` key in service account json file
@@ -43,15 +45,18 @@ rspec src/white_book.spec.rb
 
 Sheet script reserves specific columns and cells:
 
-| Scope  | Description           | Value type        |
-| ------ | --------------------- | ----------------- |
-| A6:A36 | NIP numbers           | Text              |
-| B6:B36 | Account numbers       | Text              |
-| C6:C36 | Found state value     | 0 &#124; 1        |
-| D6:D36 | Valid state value     | 0 &#124; 1        |
-| B1     | Request date          | Date (YYYY-MM-DD) |
-| B2     | Request ID            | Text              |
-| B3     | Confirmation file URL | Text              |
+| Scope  | Description                 | Value type        |
+| ------ | --------------------------- | ----------------- |
+| A6:A36 | NIPs (optional)             | Text              |
+| B6:B36 | Account numbers (required)  | Text              |
+| C6:C36 | Found state value           | 0 &#124; 1        |
+| D6:D36 | Valid state value           | 0 &#124; 1        |
+| E6:E36 | Virtual account state value | 0 &#124; 1        |
+| F6:F36 | NIP                         | Number            |
+| G6:G36 | Company                     | Text              |
+| H6:H36 | Request ID                  | Text              |
+| B1     | Request date                | Date (YYYY-MM-DD) |
+| B2     | Confirmation file URL       | Text              |
 
 ## AWS Lambda deployment
 
@@ -74,16 +79,6 @@ docker run -it -v $PWD:/home/app white-book-vat bash
 
 ruby app.rb
 ```
-
-## TODO
-
-- ~~Read data from Google Sheets via API~~
-- ~~Request data from [MF API](https://wl-api.mf.gov.pl/)~~
-- ~~Return results~~
-- ~~Tests~~
-- ~~Deploy to AWS Lambda~~
-- ~~Store confirmation files in S3 bucket~~
-- ~~Create UI~~
 
 ## Licence
 

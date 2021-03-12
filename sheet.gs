@@ -26,16 +26,15 @@ function formatDate(date) {
 function checkData() {
   var sheet = SpreadsheetApp.getActiveSheet();
 
-  sheet.getRange("C6:C36").clearContent();
-  sheet.getRange("D6:D36").clearContent();
+  ["C", "D", "E", "F", "G", "H"].forEach((c) => {
+    sheet.getRange(`${c}6:${c}36`).clearContent();
+  });
 
   var dateTimeCell = sheet.getRange("B1");
-  var requestIdCell = sheet.getRange("B2");
-  var confirmationCell = sheet.getRange("B3");
+  var confirmationCell = sheet.getRange("B2");
 
   var date = dateTimeCell.getValue();
 
-  requestIdCell.clearContent();
   dateTimeCell.clearContent();
   confirmationCell.clearContent();
 
@@ -52,21 +51,32 @@ function checkData() {
   var request = UrlFetchApp.fetch(CONFIG.apiUrl, options);
   var response = JSON.parse(request.getContentText());
 
-  requestIdCell.setValue(response["request_id"]);
-  dateTimeCell.setValue(response["date_time"]);
+  dateTimeCell.setValue(response["date"]);
   confirmationCell.setValue(response["confirmation_url"]);
 
   for (var index in response.results) {
     var cell = 6 + Number(index);
     var result = response.results[index];
 
-    if (result["nip"] !== "") {
+    if (result["checked"]) {
       sheet
         .getRange("C" + cell)
         .setValue(result["found"] ? "1" : "0");
       sheet
         .getRange("D" + cell)
         .setValue(result["valid"] ? "1" : "0");
+      sheet
+        .getRange("E" + cell)
+        .setValue(result["hasVirtual"] && !result["accountFound"] ? "1" : "0");
+      sheet
+        .getRange("F" + cell)
+        .setValue(result["nip"]);
+      sheet
+        .getRange("G" + cell)
+        .setValue(result["company"]);
+      sheet
+        .getRange("H" + cell)
+        .setValue(result["requestId"]);
     }
   }
 }

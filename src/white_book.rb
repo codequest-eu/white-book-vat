@@ -11,7 +11,7 @@ Dotenv.load ".env"
 
 module WhiteBook
   class VAT
-    attr_reader :accounts, :accounts_data, :confimation_response, :search_id, :date
+    attr_reader :accounts, :accounts_data, :search_id, :date
 
     def initialize(sheet_raw_data = nil, date = nil)
       @sheet_raw_data = sheet_raw_data
@@ -35,10 +35,15 @@ module WhiteBook
 
       @accounts = sheet.map do |nip, account|
         {
-          nip: nip.to_s.tr('^0-9', ''),
           account: account.to_s.tr('^0-9', ''),
+          accountFound: false,
+          company: nil,
           found: false,
-          valid: nil
+          nip: nil,
+          requestId: nil,
+          valid: false,
+          hasVirtual: false,
+          checked: false
         }
       end
 
@@ -46,14 +51,14 @@ module WhiteBook
     end
 
     def create_accounts_data
-      mf_api = MfAPI.new(accounts, @date)
-      accounts_data = mf_api.accounts_data
+      mf_api = MfAPI.new(@date)
 
-      @confimation_response = accounts_data.freeze
-      @accounts_data = JSON.parse accounts_data
-      @request_id = @accounts_data["result"]["requestId"]
-
-      @accounts_data
+      @accounts_data = @accounts.map do |subject|
+        unless subject[:account].to_s.strip.empty?
+          account_data = mf_api.account_data(subject[:account])
+          JSON.parse(account_data)
+        end
+      end
     end
 
     def check_accounts
@@ -61,45 +66,56 @@ module WhiteBook
         return
       end
 
-      accounts.each do |check|
-        record = self.accounts_data["result"]["subjects"].find { |subject| subject["nip"] == check[:nip] }
+      accounts.each_with_index do |record, index|
+        next if record.nil? or accounts_data[index].nil?
 
-        next if record.nil?
+        response_data = accounts_data[index]["result"]["entries"].first
 
-        check[:found] = true
-        check[:valid] = record["accountNumbers"].find { |account| account == check[:account] }.nil? == false
+        record[:checked] = true
+        record[:requestId] = accounts_data[index]["result"]["requestId"]
+
+        next if response_data.nil?
+
+        item = response_data["subjects"].first
+
+        next if item.nil?
+
+        record[:accountFound] = item["accountNumbers"].include?(record[:account])
+        record[:found] = true
+        record[:valid] = item["statusVat"] == "Czynny"
+        record[:nip] = item["nip"]
+        record[:hasVirtual] = item["hasVirtualAccounts"]
+        record[:company] = item["name"]
       end
 
       {
         accounts: accounts,
-        date_time: @date,
-        request_id: @request_id,
-        confimation_response: confimation_response,
+        date: @date
       }
     end
 
     def store
-      return nil if confimation_response == nil
+      return if accounts_data.nil?
 
-      file = BucketS3.new(confimation_response, @date)
+      file = BucketS3.new(accounts_data.to_json, @date)
       file.store
     end
   end
 
   class MfAPI
-    def initialize(accounts, date = nil)
-      @accounts = accounts
+    def initialize(date = nil)
       @date = date
     end
 
-    def accounts_data
-      return nil if @accounts.size.zero?
+    def account_data(account_number = nil)
+      return unless account_number
 
-      uri = mf_uri
+      uri = mf_uri(account_number)
+
       response = Net::HTTP.get_response(uri)
 
       if (response.code != "200")
-        raise "#{JSON.parse(response.body)["message"]}"
+        raise JSON.parse(response.body)["message"]
       end
 
       response.body
@@ -107,11 +123,8 @@ module WhiteBook
 
     private
 
-    def mf_uri
-      nips = @accounts.map { |account| "#{account[:nip]}" }.join ","
-      scope_date = @date
-
-      URI("#{ENV["MF_API_BASE"]}/api/search/nips/#{nips}?date=#{scope_date}")
+    def mf_uri(bank_account)
+      URI("#{ENV["MF_API_BASE"]}/api/search/bank-accounts/#{bank_account}?date=#{@date}")
     end
   end
 
@@ -167,9 +180,8 @@ module WhiteBook
     def create_file
       return unless @content_to_save != nil
 
-      request_id = JSON.parse(@content_to_save)["result"]["requestId"]
-      scope_date = @date
-      file_name = "#{scope_date}_#{request_id}_confirmation.json"
+      request_date = Time.now.strftime("%Y-%m-%d_%k%M%S")
+      file_name = "#{request_date}_confirmation.json"
 
       out_file = File.new(@dir + file_name, "w")
       out_file.puts(@content_to_save)

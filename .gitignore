@@ -16,6 +16,7 @@
 # Ignore Byebug command history file.
 .byebug_history
 .bash_history
+.irb_history
 
 ## Specific to RubyMotion:
 .dat*
