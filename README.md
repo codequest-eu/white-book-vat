@@ -22,8 +22,8 @@ Using Google Sheets as a data source:
 - Go to Credentials section:
   - Create Credentials > Service account > Create
   - Role: "Browser" > Continue
-  - Create kye > Key type: JSON > Create
-  - Save file in project's root.
+  - Create key > Key type: JSON > Create
+  - Save file in projects root.
 - In Google Sheets App: share selected sheet with user from `client_email` key in service account json file
 
 Create `.env` file based on .env.template (`cp .env.template .env`) and add shared Sheet's file id (can be found in its URL) and json service account file name
