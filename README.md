@@ -4,7 +4,7 @@
 
 Check VAT bank accounts using [MF API](https://www.gov.pl/web/kas/api-wykazu-podatnikow-vat) and Google Sheets.
 
-<img src="https://white-book-vat.s3-eu-west-1.amazonaws.com/wb_2.gif" height="250" alt="White Book preview" />
+![white-book-demo](https://user-images.githubusercontent.com/3975783/111902000-783e8980-8a3b-11eb-94ad-ab218f75365b.gif)
 
 ## Setup
 
