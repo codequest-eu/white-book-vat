@@ -168,7 +168,7 @@ module WhiteBook
 
       obj = s3.bucket(ENV["S3_BUCKET"]).object("reports/#{file_name}")
 
-      obj.upload_file(file_path)
+      obj.upload_file(file_path, { content_type: "application/json" })
 
       File.delete(file_path) if File.exist?(file_path)
 
